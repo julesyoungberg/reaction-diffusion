@@ -12,6 +12,7 @@ use crate::util::*;
 
 struct Model {
     uniform_texture: wgpu::Texture,
+    updater: CustomRenderer,
     render: CustomRenderer,
     uniforms: UniformBuffer,
     capturer: FrameCapturer,
@@ -39,7 +40,8 @@ fn model(app: &App) -> Model {
     // Create the compute shader module.
     println!("loading shaders");
     let vs_mod = compile_shader(app, device, "shader.vert", shaderc::ShaderKind::Vertex);
-    let fs_mod = compile_shader(app, device, "shader.frag", shaderc::ShaderKind::Fragment);
+    let update_fs_mod = compile_shader(app, device, "update.frag", shaderc::ShaderKind::Fragment);
+    let draw_fs_mod = compile_shader(app, device, "shader.frag", shaderc::ShaderKind::Fragment);
 
     // create our custom texture for rendering
     println!("creating app texure");
@@ -53,15 +55,30 @@ fn model(app: &App) -> Model {
     println!("creating sampler");
     let sampler = wgpu::SamplerBuilder::new().build(device);
 
-    let render = CustomRenderer::new::<Uniforms>(
+    let updater = CustomRenderer::new::<Uniforms>(
         device,
         &vs_mod,
-        &fs_mod,
+        &update_fs_mod,
         None,
         None,
         Some(&vec![&uniform_texture]),
         Some(&sampler),
         Some(&uniforms.buffer),
+        WIDTH,
+        HEIGHT,
+        sample_count,
+    )
+    .unwrap();
+
+    let render = CustomRenderer::new::<Uniforms>(
+        device,
+        &vs_mod,
+        &draw_fs_mod,
+        None,
+        None,
+        Some(&vec![&uniform_texture]),
+        Some(&sampler),
+        None,
         WIDTH,
         HEIGHT,
         sample_count,
@@ -131,6 +148,7 @@ fn model(app: &App) -> Model {
 
     Model {
         uniform_texture,
+        updater,
         render,
         uniforms,
         capturer,
@@ -149,12 +167,13 @@ fn update(app: &App, model: &mut Model, _update: Update) {
 
     model.uniforms.update(device, &mut encoder, app.time);
 
+    model.updater.render(&mut encoder);
     model.render.render(&mut encoder);
 
     // copy app texture to uniform texture
     copy_texture(
         &mut encoder,
-        &model.render.output_texture,
+        &model.updater.output_texture,
         &model.uniform_texture,
     );
 
