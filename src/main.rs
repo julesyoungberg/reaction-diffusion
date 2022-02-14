@@ -1,14 +1,11 @@
 use nannou::prelude::*;
 
 mod capture;
-mod compute;
-mod particles;
 mod render;
 mod uniforms;
 mod util;
 
 use crate::capture::*;
-use crate::particles::*;
 use crate::render::*;
 use crate::uniforms::*;
 use crate::util::*;
@@ -17,13 +14,11 @@ struct Model {
     uniform_texture: wgpu::Texture,
     render: CustomRenderer,
     uniforms: UniformBuffer,
-    particle_system: ParticleSystem,
     capturer: FrameCapturer,
 }
 
 const WIDTH: u32 = 1440;
 const HEIGHT: u32 = 810;
-const PARTICLE_COUNT: u32 = 3000;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -39,17 +34,7 @@ fn model(app: &App) -> Model {
     let window = app.window(window_id).unwrap();
     let device = window.swap_chain_device();
 
-    println!("generating particles");
-
-    let uniforms = UniformBuffer::new(
-        device,
-        PARTICLE_COUNT,
-        WIDTH as f32,
-        HEIGHT as f32,
-        app.time,
-    );
-
-    let particle_system = ParticleSystem::new(app, device, &uniforms);
+    let uniforms = UniformBuffer::new(device, WIDTH as f32, HEIGHT as f32, app.time);
 
     // Create the compute shader module.
     println!("loading shaders");
@@ -72,8 +57,8 @@ fn model(app: &App) -> Model {
         device,
         &vs_mod,
         &fs_mod,
-        Some(&vec![&particle_system.position_buffer]),
-        Some(&vec![&particle_system.buffer_size]),
+        None,
+        None,
         Some(&vec![&uniform_texture]),
         Some(&sampler),
         Some(&uniforms.buffer),
@@ -96,12 +81,31 @@ fn model(app: &App) -> Model {
     println!("drawing initial design");
     draw.reset();
     draw.background().color(BLACK);
+    // draw.rect().x_y(0.0, 0.0).w_h(100.0, 100.0).color(WHITE);
     // draw.ellipse().x_y(0.0, 0.0).radius(20.0).color(WHITE);
-    draw.line()
-        .start(pt2(0.0, HEIGHT as f32 * 0.3))
-        .end(pt2(0.0, HEIGHT as f32 * -0.3))
-        .weight(4.0)
-        .color(WHITE);
+    // draw.line()
+    //     .start(pt2(0.0, HEIGHT as f32 * 0.3))
+    //     .end(pt2(0.0, HEIGHT as f32 * -0.3))
+    //     .weight(4.0)
+    //     .color(WHITE);
+
+    // Store the radius of the circle we want to make.
+    let radius = 150.0;
+    // Map over an array of integers from 0 to 360 to represent the degrees in a circle.
+    let points = (0..=360).map(|i| {
+        // Convert each degree to radians.
+        let radian = deg_to_rad(i as f32);
+        // Get the sine of the radian to find the x co-ordinate of this point of the circle
+        // and multiply it by the radius.
+        let x = radian.sin() * radius;
+        // Do the same with cosine to find the y co-ordinate.
+        let y = radian.cos() * radius;
+        // Construct and return a point object with a color.
+        (pt2(x, y), WHITE)
+    });
+    // Create a polyline builder. Hot-tip: polyline is short-hand for a path that is
+    // drawn via "stroke" tessellation rather than "fill" tessellation.
+    draw.polyline().weight(3.0).points_colored(points); // Submit our points.
 
     // Render our drawing to the texture.
     println!("rendering");
@@ -129,7 +133,6 @@ fn model(app: &App) -> Model {
         uniform_texture,
         render,
         uniforms,
-        particle_system,
         capturer,
     }
 }
@@ -145,8 +148,6 @@ fn update(app: &App, model: &mut Model, _update: Update) {
     let mut encoder = device.create_command_encoder(&desc);
 
     model.uniforms.update(device, &mut encoder, app.time);
-
-    model.particle_system.update(&mut encoder);
 
     model.render.render(&mut encoder);
 

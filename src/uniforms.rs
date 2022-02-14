@@ -5,27 +5,27 @@ use nannou::prelude::*;
 #[repr(C)]
 #[derive(Debug, Default, Clone, Copy, Uniform)]
 pub struct Uniforms {
-    pub particle_count: uint,
     pub width: float,
     pub height: float,
     pub time: float,
-    pub threshold: float,
-    pub limitation_threshold: float,
-    pub decay: float,
-    pub range: float,
+    pub diffusion_rate_a: float,
+    pub diffusion_rate_b: float,
+    pub feed_rate: float,
+    pub reaction_speed: float,
+    pub kill_rate: float,
 }
 
 impl Uniforms {
-    pub fn new(particle_count: uint, width: float, height: float, time: f32) -> Self {
+    pub fn new(width: float, height: float, time: f32) -> Self {
         Uniforms {
-            particle_count,
             width,
             height,
             time,
-            threshold: 0.8,
-            limitation_threshold: 0.001,
-            decay: 0.97,
-            range: 3.0,
+            diffusion_rate_a: 1.0,
+            diffusion_rate_b: 0.5,
+            feed_rate: 0.0545,
+            reaction_speed: 0.5,
+            kill_rate: 0.042,
         }
     }
 }
@@ -36,14 +36,8 @@ pub struct UniformBuffer {
 }
 
 impl UniformBuffer {
-    pub fn new(
-        device: &wgpu::Device,
-        particle_count: uint,
-        width: float,
-        height: float,
-        time: f32,
-    ) -> Self {
-        let data = Uniforms::new(particle_count, width, height, time);
+    pub fn new(device: &wgpu::Device, width: float, height: float, time: f32) -> Self {
+        let data = Uniforms::new(width, height, time);
 
         let std140_uniforms = data.std140();
         let uniforms_bytes = std140_uniforms.as_raw();

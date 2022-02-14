@@ -1,96 +1,49 @@
-// NOTE: This shader requires being manually compiled to SPIR-V in order to
-// avoid having downstream users require building shaderc and compiling the
-// shader themselves. If you update this shader, be sure to also re-compile it
-// and update `frag.spv`. You can do so using `glslangValidator` with the
-// following command: `glslangValidator -V shader.frag`
-
 #version 450
 
 layout(location = 0) in vec2 tex_coords;
 layout(location = 0) out vec4 f_color;
 
-layout(set = 0, binding = 0) buffer PositionBuffer { vec2[] positions; };
-layout(set = 0, binding = 1) uniform texture2D tex;
-layout(set = 0, binding = 2) uniform sampler tex_sampler;
-layout(set = 0, binding = 3) uniform Uniforms {
-    uint particle_count;
+layout(set = 0, binding = 0) uniform texture2D tex;
+layout(set = 0, binding = 1) uniform sampler tex_sampler;
+layout(set = 0, binding = 2) uniform Uniforms {
     float width;
     float height;
     float time;
-    float threshold;
-    float limitation_threshold;
-    float decay;
-    float range;
+    float diffusion_rate_a;
+    float diffusion_rate_b;
+    float feed_rate;
+    float reaction_speed;
+    float kill_rate;
 };
 
-void debug(vec2 position) {
-    const float particle_size = 2.0;
-    vec3 color = vec3(0.0);
+vec3 laplacian() {
+    vec3 rg = vec3(0.0);
+    vec3 d = vec3(1 / vec2(width, height), 0.0);
 
-    for (uint i = 0; i < particle_count; i++) {
-        vec2 particle_position = positions[i];
-        vec2 diff = abs(position - particle_position);
-        float d = length(diff);
-        float v = smoothstep(particle_size + 0.5, particle_size, d);
-        color += v;
-    }
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords - d.xy).rgb * 0.05;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords - d.zy).rgb * 0.2;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy * vec2(1.0, -1.0)).rgb * 0.05;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords - d.xz).rgb * 0.2;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords).rgb * -1.0;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords + d.xz).rgb * 0.2;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy * vec2(-1.0, 1.0)).rgb * 0.05;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords + d.zy).rgb * 0.2;
+    rg += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy).rgb * 0.05;
 
-    f_color = vec4(color, 1.0);
+    return rg;
 }
 
 void main() {
-    vec3 color = texture(sampler2D(tex, tex_sampler), tex_coords).rgb;
-    float current = (color.r + color.g + color.b) / 3.0;
-    color *= decay;
-    
-    // get the corresponding world position
-    vec2 position = tex_coords;
-    position.y = 1.0 - position.y;
-    position -= 0.5;
-    position *= vec2(width, height);
-    // debug(position);
-    // return;
+    vec3 color = vec3(0.0);
+    color = texture(sampler2D(tex, tex_sampler), tex_coords).rgb;
+    float a = color.r;
+    float b = color.g;
 
-    // check if a particle is on the pixel 
-    bool has_particle = false;
-    for (uint i = 0; i < particle_count; i++) {
-        vec2 particle_position = positions[i];
-        vec2 diff = position - particle_position;
+    vec3 lp = laplacian();
+    float a2 = a + (diffusion_rate_a * lp.x - a * b * b + feed_rate * (1.0 - a)) * reaction_speed;
+    float b2 = b + (diffusion_rate_b * lp.y + a * b * b - (kill_rate + feed_rate) * b) * reaction_speed;
 
-        if (length(diff) < range) {
-            has_particle = true;
-            break;
-        }
-    }
-
-    if (has_particle && current <= limitation_threshold) {
-        // make position nonnegative
-        position += vec2(width, height) * 0.5;
-
-        // sum neighboring pixels
-        vec3 sum = vec3(0.0);
-        for (int x = -1; x < 2; x++) {
-            for (int y = -1; y < 2; y++) {
-                vec2 coord = position + vec2(x, y);
-                coord /= vec2(width, height);
-                coord.y = 1.0 - coord.y;
-                sum += texture(sampler2D(tex, tex_sampler), coord).rgb;
-            }
-        }
-
-        // if average is above threshold then add to aggregate
-        float avg = (sum.r + sum.g + sum.b) / 3.0;
-        if (avg > threshold) {
-            color = vec3(1.0);
-        }
-    } 
-    // else {
-    //     vec2 particle_position = positions[0] / vec2(width * 0.5, height * 0.5);
-    //     particle_position += 0.5;
-
-    //     float d = distance(position, particle_position);
-    //     f_color = vec4(d);
-    // }
+    color = vec3(a2, b2, 0.0);
 
     f_color = vec4(color, 1.0);
 }
