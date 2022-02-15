@@ -24,7 +24,7 @@ float sdEquilateralTriangle(in vec2 p) {
 }
 
 vec3 circle(in vec2 st) {
-    float d = fract(length(st) * 5.0);
+    float d = fract(length(st) * 1.0);
     float w = 0.003;
     float pos = 0.19;
     float l = smoothstep(pos + w, pos, d) - smoothstep(pos, pos - w, d);
@@ -35,7 +35,7 @@ vec3 circle(in vec2 st) {
 vec3 square(in vec2 st) {
     float w = 0.01;
     float pos = 0.1;
-    float scale = 1.0;
+    float scale = 5.0;
     float d = smoothstep(pos + w, pos, fract(abs(st.x) * scale)) 
         * smoothstep(pos + w, pos, fract(abs(st.y) * scale));
     vec3 color = mix(vec3(1, 0, 0), vec3(0, 1, 0), d);
@@ -67,7 +67,7 @@ void main() {
 
     vec3 color = vec3(0.0);
 
-    color = circle(st);
+    color = circle(st); // + circle(st - vec2(0.2, 0.0)) + circle(st + vec2(0.2, 0.0));
     // color = square(st);
     // color = triangle(st);
     // color = vertical_line(st);

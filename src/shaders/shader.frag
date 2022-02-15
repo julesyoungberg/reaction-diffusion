@@ -20,10 +20,10 @@ void main() {
     float d = texture(sampler2D(tex, tex_sampler), tex_coords).g;
 
     // plain
-    // color = vec3(d);
+    color = vec3(d);
 
     // lines
-    color = lines(d);
+    // color = lines(d);
 
     f_color = vec4(color, 1.0);
 }

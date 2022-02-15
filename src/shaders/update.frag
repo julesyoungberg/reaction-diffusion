@@ -13,7 +13,7 @@ layout(set = 0, binding = 2) uniform Uniforms {
 
 const float diffusion_rate_a = 1.0;
 const float diffusion_rate_b = 0.5;
-const float feed_rate = 0.025;
+const float feed_rate = 0.02;
 const float kill_rate = 0.05;
 const float reaction_speed = 1.0;
 
