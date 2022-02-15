@@ -24,7 +24,7 @@ float sdEquilateralTriangle(in vec2 p) {
 }
 
 vec3 circle(in vec2 st) {
-    float d = fract(length(st) * 1.0);
+    float d = fract(length(st) * 5.0);
     float w = 0.003;
     float pos = 0.19;
     float l = smoothstep(pos + w, pos, d) - smoothstep(pos, pos - w, d);

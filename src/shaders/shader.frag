@@ -17,13 +17,17 @@ vec3 lines(float d) {
 
 void main() {
     vec3 color = vec3(0.0);
-    float d = texture(sampler2D(tex, tex_sampler), tex_coords).g;
+    vec3 values = texture(sampler2D(tex, tex_sampler), tex_coords).rgb;
 
     // plain
-    color = vec3(d);
+    color += vec3(smoothstep(0.0, 0.1, values.g));
 
     // lines
-    // color = lines(d);
+    // color = lines(values.g);
+
+    // add noise
+    color.r += values.b * 10.0;
+    // color.gb -= values.b * 10.0;
 
     f_color = vec4(color, 1.0);
 }
