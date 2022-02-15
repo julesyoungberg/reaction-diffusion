@@ -8,11 +8,6 @@ pub struct Uniforms {
     pub width: float,
     pub height: float,
     pub time: float,
-    pub diffusion_rate_a: float,
-    pub diffusion_rate_b: float,
-    pub feed_rate: float,
-    pub kill_rate: float,
-    pub reaction_speed: float,
 }
 
 impl Uniforms {
@@ -21,11 +16,6 @@ impl Uniforms {
             width,
             height,
             time,
-            diffusion_rate_a: 1.0,
-            diffusion_rate_b: 0.5,
-            feed_rate: 0.047,
-            kill_rate: 0.052,
-            reaction_speed: 1.0,
         }
     }
 }

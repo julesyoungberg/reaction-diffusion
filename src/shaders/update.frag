@@ -9,12 +9,13 @@ layout(set = 0, binding = 2) uniform Uniforms {
     float width;
     float height;
     float time;
-    float diffusion_rate_a;
-    float diffusion_rate_b;
-    float feed_rate;
-    float kill_rate;
-    float reaction_speed;
 };
+
+const float diffusion_rate_a = 1.0;
+const float diffusion_rate_b = 0.5;
+const float feed_rate = 0.025;
+const float kill_rate = 0.05;
+const float reaction_speed = 1.0;
 
 vec3 laplacian(vec3 color) {
     vec3 d = vec3(1.0 / vec2(width, height), 0.0);
@@ -23,10 +24,11 @@ vec3 laplacian(vec3 color) {
     color += texture(sampler2D(tex, tex_sampler), tex_coords - d.zy).rgb * 0.2;
     color += texture(sampler2D(tex, tex_sampler), tex_coords - d.xy * vec2(-1.0, 1.0)).rgb * 0.05;
     color += texture(sampler2D(tex, tex_sampler), tex_coords - d.xz).rgb * 0.2;
-    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.xz).rgb * 0.2;
-    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy * vec2(-1.0, 1.0)).rgb * 0.05;
-    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.zy).rgb * 0.2;
+
     color += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy).rgb * 0.05;
+    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.zy).rgb * 0.2;
+    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.xy * vec2(-1.0, 1.0)).rgb * 0.05;
+    color += texture(sampler2D(tex, tex_sampler), tex_coords + d.xz).rgb * 0.2;
 
     return color;
 }

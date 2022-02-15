@@ -20,6 +20,7 @@ struct Model {
 
 const WIDTH: u32 = 1440;
 const HEIGHT: u32 = 810;
+const SPEED: u32 = 10;
 
 fn main() {
     nannou::app(model).update(update).run();
@@ -141,6 +142,14 @@ fn model(app: &App) -> Model {
     }
 }
 
+fn diffuse(model: &mut Model, encoder: &mut wgpu::CommandEncoder) {
+    model.updater.render(encoder);
+    model
+        .updater
+        .texture_reshaper
+        .encode_render_pass(&model.uniform_texture.view().build(), encoder);
+}
+
 fn update(app: &App, model: &mut Model, _update: Update) {
     let window = app.main_window();
     let device = window.swap_chain_device();
@@ -153,7 +162,10 @@ fn update(app: &App, model: &mut Model, _update: Update) {
 
     model.uniforms.update(device, &mut encoder, app.time);
 
-    model.updater.render(&mut encoder);
+    for _ in 0..SPEED {
+        diffuse(model, &mut encoder);
+    }
+
     model.render.render(&mut encoder);
 
     // copy app texture to uniform texture
