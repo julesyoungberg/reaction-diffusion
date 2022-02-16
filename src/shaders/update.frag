@@ -116,7 +116,7 @@ void main() {
     vec2 uv = tex_coords;
 
     float angle = snoise(vec3(uv * 2.0, time * 0.01)) * PI;
-    uv += vec2(sin(angle), cos(angle)) * uv_displacement;
+    uv = fract(uv + vec2(sin(angle), cos(angle)) * uv_displacement);
 
     vec3 color = vec3(0.0);
     color = clamp(texture(sampler2D(tex, tex_sampler), uv).rgb, vec3(0.0), vec3(1.0));
